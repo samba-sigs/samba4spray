@@ -1,0 +1,50 @@
+- name: Restart Samba
+  systemd:
+    name: samba.service
+    state: restarted    
+
+- pause:
+    seconds: 5
+
+- name: Create Files Directory
+  file:
+    path: "{{ fileserver.files_dir }}"
+    state: directory
+    group: "Domain Admins"
+    owner: Administrator
+
+- name: Create Home Users Directory
+  file:
+    path: "{{ fileserver.files_dir }}/Users"
+    state: directory
+    group: "Domain Admins"
+    owner: Administrator
+  when: fileserver.home_user_dir is defined
+
+- name: Create Recycle Directory
+  file:
+    path: "{{ fileserver.files_dir }}/Recycle"
+    state: directory
+    group: "Domain Admins"
+    owner: Administrator
+  when: fileserver.recycle is defined
+
+- name: Create Public Directory
+  file:
+    path: "{{ fileserver.files_dir }}/Public"
+    state: directory
+    group: "Domain Admins"
+    owner: Administrator
+  when: fileserver.public_dir is defined
+
+- name: Set Permission Public
+  shell: samba-tool ntacl set "O:LAG:DAD:PAI(A;;0x001f01ff;;;LA)(A;;0x001f01ff;;;DA)(A;OICIIO;0x001301bf;;;CO)(A;OICIIO;0x001301bf;;;CG)(A;OICI;0x001301bf;;;DU)" {{ fileserver.files_dir }}/Public
+  when: fileserver.public_dir is defined
+
+- name: Set Permission Home Users
+  shell: samba-tool ntacl set "O:LAG:DAD:PAI(A;OICI;0x001f01ff;;;LA)(A;OICI;0x001f01ff;;;DA)(A;OICIIO;0x001f01ff;;;CO)(A;;0x001200a9;;;DU)" {{ fileserver.files_dir }}/Users
+  when: fileserver.home_user_dir is defined
+
+- name: Set Permission Recycle
+  shell: samba-tool ntacl set "O:LAG:DAD:PAI(A;OICI;0x001f01ff;;;LA)(A;OICI;0x001f01ff;;;DA)(A;OICIIO;0x001f01ff;;;CO)(A;;0x001201bd;;;DU)" {{ fileserver.files_dir }}/Recycle
+  when: fileserver.recycle is defined

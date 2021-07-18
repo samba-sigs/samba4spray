@@ -1,0 +1,46 @@
+- name: Create Audit Directory
+  file:
+    path: "{{ fileserver.files_dir }}/Audit"
+    state: directory
+    owner: syslog
+    group: "Domain Admins"
+  when: audit.enable is defined
+
+- name: Set Permission Audit
+  shell: samba-tool ntacl set "O:S-1-22-1-104G:DAD:AI(A;OICI;0x001f01ff;;;DA)(A;OICI;0x001f01ff;;;LA)(A;OICI;;;;WD)(A;;0x001f01ff;;;S-1-22-1-104)(A;;0x001f01ff;;;DA)(A;;0x001f01ff;;;DA)(A;OICIIO;0x001f01ff;;;CO)(A;OICIIO;0x001f01ff;;;CG)" {{ fileserver.files_dir }}/Audit
+  register: result
+  retries: 3
+  delay: 10
+  until: result is not failed
+
+- name: Create SysLog Audit
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - {src: '00-samba-audit.conf.j2', dest: '/etc/rsyslog.d/00-samba-audit.conf'}
+    - {src: 'samba.j2', dest: '/etc/logrotate.d/samba'}
+
+- name: Delete all files in Audit Folder
+  shell: "rm -rf {{ fileserver.files_dir }}/Audit/* ; rm -rf /tmp/acls.sh"
+
+- name: Restart Syslog
+  systemd:
+    name: syslog.service
+    state: restarted
+
+- name: Start Samba
+  systemd:
+    name: samba.service
+    state: restarted
+  when: inventory_hostname not in groups['fileserver'] 
+
+- name: Start smbd/nmbd/winbindd services
+  systemd:
+    name: "{{ item }}"
+    state: restarted
+  with_items:
+    - smbd.service
+    - nmbd.service
+    - winbind.service
+  when: inventory_hostname in groups['fileserver']

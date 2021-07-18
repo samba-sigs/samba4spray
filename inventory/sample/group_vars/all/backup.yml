@@ -1,0 +1,3 @@
+# Enable Veeam Backup 
+# View the documentation: docs/veeam-backup.md //TO_DO
+veeam_backup: true

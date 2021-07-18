@@ -1,0 +1,79 @@
+---
+
+- name: Remove old dir of unarchived samba
+  file:
+    path: "/opt/samba-{{ samba_version }}/"
+    state: absent
+  when: inventory_hostname not in groups['fileserver']
+
+- name: Download Samba4
+  get_url:
+    url: "https://download.samba.org/pub/samba/stable/samba-{{ samba_version}}.tar.gz"
+    dest: /opt/
+  when: inventory_hostname not in groups['fileserver']
+
+- name: Extract package in /opt/
+  unarchive:
+    src: "/opt/samba-{{ samba_version }}.tar.gz"
+    dest: /opt/
+    remote_src: true
+  when: inventory_hostname not in groups['fileserver']
+
+- name:  Compiling Samba | ./configure
+  shell: "./configure --progress --enable-fhs --sysconfdir=/etc --localstatedir=/var --with-privatedir=/var/lib/samba/private --with-piddir=/var/run/samba --with-automount --datadir=/usr/share --with-lockdir=/var/run/samba --with-statedir=/var/lib/samba --with-cachedir=/var/cache/samba --with-systemd >> configure.log"
+  args:
+    chdir: /opt/samba-{{ samba_version }}/
+  async: 1000
+  poll: 0
+  register: scrout
+  when: inventory_hostname not in groups['fileserver']
+
+- name: Waiting Configure to Finish
+  async_status:
+    jid: "{{ scrout.ansible_job_id }}"
+  register: job_result
+  until: job_result.finished
+  retries: 1000
+  delay: 10
+  when: inventory_hostname not in groups['fileserver']
+
+- name: Compiling Samba | make
+  shell: "make -j $(python3 -c 'import multiprocessing as mp; print(int(mp.cpu_count() * 1.5))') >> make.log"
+  args:
+    chdir: /opt/samba-{{ samba_version }}/  
+  async: 5000
+  poll: 0
+  register: make
+  when: inventory_hostname not in groups['fileserver']
+
+- name: Compiling Samba | make (Please wait, this will take a while...)
+  async_status:
+    jid: "{{ make.ansible_job_id }}"
+  register: job_result
+  until: job_result.finished
+  retries: 2000
+  delay: 10
+  when: inventory_hostname not in groups['fileserver']
+
+- name: Compiling Samba | make install
+  shell: "make install >> make_install.log"
+  args:
+    chdir: /opt/samba-{{ samba_version }}/
+  async: 5000
+  poll: 0
+  register: make_install
+  when: inventory_hostname not in groups['fileserver']
+
+- name: Compiling Samba | make install (Please wait, this will take a while...)
+  async_status:
+    jid: "{{ make_install.ansible_job_id }}"
+  register: job_result
+  until: job_result.finished
+  retries: 2000
+  delay: 10
+  when: inventory_hostname not in groups['fileserver']
+
+- name: Create binaries links
+  shell: |
+     ln -s /usr/local/samba/bin/* /bin/
+     ln -s /usr/local/samba/sbin/* /sbin/

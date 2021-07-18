@@ -1,0 +1,34 @@
+- name: Copy Veeam Package
+  copy:
+     src: veeam-release-el8-1.0.8-1.x86_64.rpm
+     dest: /tmp/veeam-release-el8-1.0.8-1.x86_64.rpm
+  when: veeam_backup is defined
+
+- rpm_key:
+    state: present
+    key: http://repository.veeam.com/keys/RPM-EFDCEA77
+
+- name: Install Veeam Backup 1/3
+  yum:
+     name: /tmp/veeam-release-el8-1.0.8-1.x86_64.rpm
+     state: present
+  when: veeam_backup is defined
+
+- name: Install Veeam Backup 2/3
+  yum:
+     name: /tmp/veeam-release-el8-1.0.8-1.x86_64.rpm
+     state: present
+  when: veeam_backup is defined
+
+- name: Install Veeam Backup 3/3
+  yum:
+     name: veeam
+     state: present
+  when: veeam_backup is defined
+
+- name: Remove Temporary packages
+  file:
+    path: /tmp/veeam-release-el8-1.0.8-1.x86_64.rpm
+    state: absent
+  when: veeam_backup is defined
+

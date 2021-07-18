@@ -1,0 +1,24 @@
+---
+
+- name: Set facts
+  include_tasks: "{{ playbook_dir }}/facts.yml"
+
+- set_fact:
+    distribution: "{{ hostvars[inventory_hostname].ansible_distribution }}"
+    release: "{{ hostvars[inventory_hostname].ansible_distribution_release }}"
+
+# - name: Samba | Member Config
+#   include_tasks: member_config.yml
+#   when: inventory_hostname in groups['fileserver'] or inventory_hostname in groups['masters']
+
+- name: Samba | Configure
+  include_tasks: config.yml
+  when: inventory_hostname in groups['dc'] or inventory_hostname in groups['fileserver']
+
+- name: Samba | Join
+  include_tasks: join.yml
+  when: inventory_hostname in groups['dc'] or inventory_hostname in groups['fileserver']
+
+- name: Samba | Post Join
+  include_tasks: post_join.yml
+  when: inventory_hostname not in groups['fileserver']

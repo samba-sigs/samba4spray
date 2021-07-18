@@ -1,0 +1,26 @@
+- name: Apply NTP Template
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - {src: 'ntp.conf.j2', dest: '/etc/ntp.conf'}
+  when: inventory_hostname not in groups['fileserver']
+
+- name: Apply NTP Template
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - {src: 'ntp.conf.j2', dest: '/etc/ntp.conf'}
+
+- name: Enable and start NTP
+  systemd:
+    name: ntp
+    state: started
+    enabled: yes
+
+- name: Restart Samba4
+  systemd:
+    name: samba.service
+    state: restarted
+  when: inventory_hostname not in groups['fileserver']

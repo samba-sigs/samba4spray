@@ -1,0 +1,17 @@
+- name: Enable and start service Gluster
+  systemd:
+    name: glusterd.service
+    enabled: yes
+    state: started
+  when: sysvol_replication is defined
+
+- name: Samba | Sysvol Replication
+  include_tasks: gluster-master.yml
+  when: inventory_hostname in groups.masters
+
+- name: Samba | Sysvol Replication
+  include_tasks: gluster-all.yml
+
+- name: Samba | Sysvol Replication
+  include_tasks: copy_files.yml
+  when: inventory_hostname in groups.masters

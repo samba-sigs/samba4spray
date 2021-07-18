@@ -1,0 +1,59 @@
+- name: Change Hostname
+  hostname:
+    name: "{{ inventory_hostname }}.{{ samba_domain }}"
+  when: ansible_fqdn != ansible_host and change_hostname is defined
+
+- name: Check if samba|smbd|nmbd|winbindd is running
+  shell: ps ax | egrep "samba|smbd|nmbd|winbindd" | awk '{print $2}'
+  ignore_errors: yes
+  changed_when: false
+  register: running_processes
+  when: not samba_directory.stat.exists
+
+- name: Kill running processes
+  ignore_errors: yes
+  shell: "kill {{ item }}"
+  with_items: "{{ running_processes.stdout_lines }}"
+  when: running_processes.changed and not samba_directory.stat.exists
+ 
+- wait_for:
+    path: "/proc/{{ item }}/status"
+    state: absent
+  with_items: "{{ running_processes.stdout_lines }}"
+  ignore_errors: yes
+  register: samba_old_processes
+  when: running_processes.changed and not samba_directory.stat.exists
+ 
+- name: Force kill stuck processes
+  ignore_errors: yes
+  shell: "kill -9 {{ item }}"
+  with_items: "{{ samba_old_processes.results | select('failed') | map(attribute='item') | list }}"
+  when: running_processes.changed and not samba_directory.stat.exists
+
+- name: Hosts | create list from inventory
+  set_fact:
+    etc_hosts_inventory_block: |-
+      {% for item in (groups['masters'] + groups['dc'] + groups['fileserver']|default([]))|unique -%}
+      {% if 'access_ip' in hostvars[item] or 'ip' in hostvars[item] or 'ansible_default_ipv4' in hostvars[item] -%}
+      {{ hostvars[item]['access_ip'] | default(hostvars[item]['ip'] | default(hostvars[item]['ansible_default_ipv4']['address'])) }}
+      {%- if ('ansible_hostname' in hostvars[item] and item != hostvars[item]['ansible_hostname']) %} {{ hostvars[item]['ansible_hostname'] }}.{{ samba_domain }} {{ hostvars[item]['ansible_hostname'] }}{% endif %} {{ item }}.{{ samba_domain }} {{ item }}
+      {% endif %}
+      {% endfor %}
+  delegate_to: localhost
+  connection: local
+  delegate_facts: yes
+  run_once: yes
+
+- name: Hosts - populate inventory into hosts file
+  blockinfile:
+    path: /etc/hosts
+    block: "{{ hostvars.localhost.etc_hosts_inventory_block }}"
+    state: present
+    create: yes
+    backup: yes
+    unsafe_writes: yes
+    marker: "# Samba 4 {mark}"
+
+- name: Update facts
+  setup:
+    gather_subset: min

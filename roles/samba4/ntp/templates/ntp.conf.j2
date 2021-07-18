@@ -1,0 +1,48 @@
+# Local clock. Note that is not the "localhost" address!
+server 127.127.1.0
+fudge  127.127.1.0 stratum 10
+
+# Where to retrieve the time from
+{% if inventory_hostname not in groups['fileserver'] %}
+{% for ntp in ntp_servers %}
+server {{ ntp }}     iburst prefer
+{% endfor %}
+{% else %}
+{% for host in groups['masters'] %}
+server {{ host }}.{{ samba_domain }}     iburst prefer
+{% endfor %}
+{% for host in groups['dc'] %}
+server {{ host }}.{{ samba_domain }}     iburst prefer
+{% endfor %}
+{% endif %}
+
+driftfile       /var/lib/ntp/ntp.drift
+logfile         /var/log/ntp
+{% if inventory_hostname not in groups['fileserver'] %}
+ntpsigndsocket  /var/lib/samba/ntp_signd/
+{% endif %}
+
+# Access control
+# Default restriction: Allow clients only to query the time
+{% if inventory_hostname not in groups['fileserver'] %}
+restrict -4 default kod notrap nomodify nopeer noquery mssntp
+{% else %}
+restrict default ignore
+{% endif %}
+
+# No restrictions for "localhost"
+restrict 127.0.0.1
+
+# Enable the time sources to only provide time to this host
+{% if inventory_hostname not in groups['fileserver'] %}
+{% for ntp in ntp_servers %}
+restric {{ ntp }}   mask 255.255.255.255    nomodify notrap nopeer noquery
+{% endfor %}
+{% else %}
+{% for host in groups['masters'] %}
+restric {{ host }}.{{ samba_domain }}    mask 255.255.255.255    nomodify notrap nopeer noquery
+{% endfor %}
+{% for host in groups['dc'] %}
+restric {{ host }}.{{ samba_domain }}    mask 255.255.255.255    nomodify notrap nopeer noquery
+{% endfor %}
+{% endif %}

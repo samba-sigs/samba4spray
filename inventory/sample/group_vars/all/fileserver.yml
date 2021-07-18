@@ -1,0 +1,15 @@
+# FileServer on DC ?
+# Best Practice: Don't use Samba DC with fileserver, for fileserver create a new server with domain member in hosts.ini file
+# https://wiki.samba.org/index.php/Setting_up_Samba_as_an_Active_Directory_Domain_Controller#Using_the_Domain_Controller_as_a_File_Server
+fileserver:
+  dc: true
+  files_dir: /Servidor
+  home_user_dir: true
+  public_dir: true
+  recycle: true
+
+member_fileserver:
+  files_dir: /Servidor
+  home_user_dir: true
+  public_dir: true
+  recycle: true

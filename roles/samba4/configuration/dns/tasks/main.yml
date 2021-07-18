@@ -1,0 +1,2 @@
+- name: Samba4 | Configurations
+  include_tasks: configs.yml

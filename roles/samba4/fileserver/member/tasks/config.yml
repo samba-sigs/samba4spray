@@ -1,0 +1,24 @@
+- name: Create smb.conf
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - {src: 'smb.conf.j2', dest: '/etc/samba/smb.conf'}
+
+- name: Enable winbind in nsswitch.conf
+  lineinfile:
+    path: /etc/nsswitch.conf
+    regexp: '^passwd(.*)$'
+    line: 'passwd:         files systemd winbind'
+    backrefs: yes
+  changed_when: true
+
+- name: Enable winbind in nsswitch.conf
+  lineinfile:
+    path: /etc/nsswitch.conf
+    regexp: '^group(.*)$'
+    line: 'group:          files systemd winbind'
+    backrefs: yes
+
+- name: Reload ldconfig
+  shell: ldconfig

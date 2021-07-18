@@ -1,0 +1,6 @@
+
+- name: Set facts
+  include_tasks: "{{ playbook_dir }}/facts.yml"
+
+- name: File Server | Config
+  include_tasks: config.yml

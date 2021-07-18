@@ -1,0 +1,10 @@
+- name: Copy Files
+  copy:
+    src: policys
+    dest: /tmp/
+
+- name: Create Default GPOs
+  shell: "samba-tool gpo restore Windows10_UNC_Fix /tmp/policys/{3C561527-6E61-4573-8F38-8A6AF39463C9} -UAdministrator --password={{ admin_pass }}"
+
+- name: Sysvol Reset
+  shell: "samba-tool ntacl sysvolreset"

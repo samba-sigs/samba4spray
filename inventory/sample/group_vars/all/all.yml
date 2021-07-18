@@ -1,0 +1,17 @@
+---
+
+# Change OS hostname based on hosts.ini file, select true or false
+change_hostname: true
+
+#Set you timezone
+timezone: America/Sao_Paulo
+
+# Enable Audit
+# Only Delete and Move/Rename files/dirs
+audit:
+  enable: true
+  max_log_size: 10000
+  log_retention: 7
+
+# Enable sysvol GlusterD replication
+sysvol_replication: true

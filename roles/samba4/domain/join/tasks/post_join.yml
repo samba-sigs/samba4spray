@@ -1,0 +1,27 @@
+
+
+- name: Create Backup of Idmap
+  command: /usr/local/samba/bin/tdbbackup -s .bak /var/lib/samba/private/idmap.ldb
+  when: inventory_hostname in groups['masters']
+
+- name: Copy idpmap to DCs
+  run_once: yes
+  fetch: src=/var/lib/samba/private/idmap.ldb.bak dest=buffer/ flat=yes
+  when: inventory_hostname in groups['masters']
+
+- name: Copy idpmap to DCs
+  copy: src=buffer/idmap.ldb.bak dest=/var/lib/samba/private
+  when: inventory_hostname in groups['dc']
+
+- name: Flush Net Cache
+  command: /usr/local/samba/bin/net cache flush
+
+- name: Enable and start service Bind9
+  systemd:
+    name: bind9
+    enabled: yes
+    state: started
+
+- name: Reset DNS Backend
+  command: /usr/local/samba/sbin/samba_upgradedns --dns-backend=BIND9_DLZ
+  when: inventory_hostname in groups['dc']

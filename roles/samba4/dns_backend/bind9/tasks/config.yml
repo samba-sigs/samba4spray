@@ -1,0 +1,60 @@
+- name: Disable systemd-resolved
+  systemd:
+    name: systemd-resolved
+    enabled: no
+    state: stopped
+
+- name: Disable IPV6 bind9
+  lineinfile:
+    path: /etc/default/named
+    regexp: '^OPTIONS=(.*)$'
+    line: 'OPTIONS="-u bind -4"'
+    backrefs: yes
+
+- name: Remove old resolv.conf
+  file:
+    path: /etc/resolv.conf
+    state: absent
+
+- name: Apply new resolv.conf
+  template:
+    src: resolv.conf.j2
+    dest: /etc/resolv.conf
+
+- name: Apply named.conf.options template
+  template:
+    src: named.conf.options.j2
+    dest: /etc/bind/named.conf.options
+
+- name: Apply named.conf.local template
+  template:
+    src: named.conf.local.j2
+    dest: /etc/bind/named.conf.local
+
+- name: Disable IPV6 on Sysctl
+  sysctl:
+    name: net.ipv6.conf.all.disable_ipv6
+    value: '1'
+    sysctl_set: yes
+    state: present
+    reload: yes
+
+- name: Disable IPV6 on Sysctl
+  sysctl:
+    name: net.ipv6.conf.default.disable_ipv6
+    value: '1'
+    sysctl_set: yes
+    state: present
+    reload: yes
+
+- name: Create dir ntp_sign
+  file:
+    path: /var/lib/samba/bind-dns
+    state: directory
+    group: bind
+
+- name: Enable and start service Bind9
+  systemd:
+    name: bind9
+    enabled: yes
+    state: restarted

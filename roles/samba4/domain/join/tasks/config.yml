@@ -1,0 +1,73 @@
+---
+
+- name: Disable IPV6 on Sysctl
+  sysctl:
+    name: net.ipv6.conf.all.disable_ipv6
+    value: '1'
+    sysctl_set: yes
+    state: present
+    reload: yes
+
+- name: Disable IPV6 on Sysctl
+  sysctl:
+    name: net.ipv6.conf.default.disable_ipv6
+    value: '1'
+    sysctl_set: yes
+    state: present
+    reload: yes
+
+- name: Configure krb5.conf
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: bind
+  with_items:
+    - {src: 'krb5.conf.j2', dest: '/etc/krb5.conf'}
+  when: inventory_hostname not in groups['fileserver']
+
+- name: Configure krb5.conf
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - {src: 'krb5.conf.j2', dest: '/etc/krb5.conf'}
+  when: inventory_hostname in groups['fileserver']
+
+- name: Create dir ntp_sign
+  file:
+    path: /var/lib/samba/ntp_signd/
+    state: directory
+    mode: '0750'
+    owner: root
+    group: ntp
+  when: inventory_hostname not in groups['fileserver']
+
+- name: Set timezone
+  timezone:
+    name: "{{ timezone }}"
+
+- name: Disable systemd-resolved
+  systemd:
+    name: systemd-resolved
+    enabled: no
+    state: stopped
+
+- name: Remove old resolv.conf
+  file:
+    path: /etc/resolv.conf
+    state: absent
+
+- name: Apply new resolv.conf
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - {src: 'resolv.conf.j2', dest: '/etc/resolv.conf'}
+
+- name: Close all Kerberos Ticket
+  shell: kdestroy
+  ignore_errors: true
+
+- name: Get Ticket Kerberos
+  shell: 'echo "{{ admin_pass }}" | kinit administrator'

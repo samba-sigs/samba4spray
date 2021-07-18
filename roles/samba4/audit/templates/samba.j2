@@ -1,0 +1,7 @@
+{{ fileserver.files_dir}}/Audit/audit.txt {
+    daily
+    missingok
+    rotate {{ audit.log_retention}}
+    compress
+    notifempty
+}

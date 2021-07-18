@@ -1,0 +1,3 @@
+# Configure a sources.list templates with fatest mirrors.txt
+ubuntu:
+  fastest_apt: true

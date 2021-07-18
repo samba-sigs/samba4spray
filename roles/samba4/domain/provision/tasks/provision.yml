@@ -1,0 +1,13 @@
+---
+- name: Check if already exists an domain
+  stat:
+    path: /var/lib/samba/private/idmap.ldb
+  register: check_idmap
+
+- name: Domain Provision Bind9
+  command: 'samba-tool domain provision --realm={{ samba_domain|upper }} --domain={{ workgroup|upper }} --adminpass={{ admin_pass }} --server-role=dc --dns-backend=BIND9_DLZ --use-rfc2307 --option="interfaces=lo {{ target_interface }}" --option="bind interfaces only=yes"'
+  when: dns_backend == "bind9" and not check_idmap.stat.exists
+
+- name: Domain Provision SAMBA_INTERNAL
+  command: 'samba-tool domain provision --realm={{ samba_domain|upper }} --domain={{ workgroup|upper }} --adminpass={{ admin_pass }} --server-role=dc --dns-backend=SAMBA_INTERNAL --use-rfc2307 --option="interfaces=lo {{ target_interface }}" --option="bind interfaces only=yes"'
+  when: dns_backend == "samba_internal" and not check_idmap.stat.exists

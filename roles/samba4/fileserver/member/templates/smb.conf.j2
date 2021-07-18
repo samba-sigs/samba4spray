@@ -1,0 +1,95 @@
+################# Global Configuration ##################
+# Do not modify!!! unless you know what you're doing
+
+[global]
+workgroup = {{ workgroup|upper }}
+security = ADS
+realm = {{ samba_domain|upper }}
+winbind separator = +
+idmap config *:backend = tdb
+idmap config *:range = 700001-800000
+idmap config {{ workgroup|upper }}:backend = rid
+idmap config {{ workgroup|upper }}:range = 10000-700000
+winbind use default domain = yes
+winbind enum users = yes
+winbind enum groups = yes
+vfs objects = acl_xattr{% if audit.enable %} full_audit {% endif %}{% if fileserver.recycle %}recycle{% endif %}
+
+map acl inherit = Yes
+acl_xattr:default acl style = windows
+
+{% if audit.enable %}
+################# Audit ##########################
+
+max log size = {{ audit.max_log_size }}
+strict sync = yes
+sync always = yes
+full_audit:success = unlinkat, renameat
+full_audit:prefix = USER: %U | MACHINE: %M | DIRECTORY: %S | --> 
+full_audit:failure = none
+full_audit:facility = LOCAL5
+full_audit:priority = notice
+
+{% endif %}
+{% if fileserver.recycle %}
+################# Recycle #######################
+
+recycle:keeptree = yes
+recycle:versions = yes
+recycle:repository = {{ fileserver.files_dir }}/Recycle/%U
+recycle:exclude = *.tmp, *.log, *.obj, ~*.*, *.bak
+recycle:exclude_dir = tmp, cache, profiles
+
+{% endif %}
+
+{% if audit.enable %}
+################# Audit ###################
+
+[Audit]
+path = {{ fileserver.files_dir }}/Audit
+read only = no
+browseable = yes
+
+{% endif %}
+{% if fileserver.recycle %}
+################# Recycle ###################
+
+[Recycle]
+path = {{ fileserver.files_dir }}/Recycle
+read only = no
+browseable = no
+
+{% endif %}
+################# Custom Shares ###################
+
+### Example share and advanced hiddens ###
+# [Name_of_your_share]
+# path = /Directory/Example
+# read only = no
+# browseable = yes
+### hide files start with a dot (.)
+# hide dot files = yes
+### hide selected files. example files start with ($)
+# hide files = /$*/
+### hide pipes, sockets, devices ...
+# hide special files = yes
+### hide files with no read permissions
+# hide unreadable = yes
+### hide files with no write permissions
+# hide unwriteable files = yes
+
+{% if fileserver.dc %}
+{% if fileserver.public_dir %}
+[Public]
+path = {{ fileserver.files_dir }}/Public
+read only = no
+{% endif %}
+
+{% if fileserver.home_user_dir %}
+[Users]
+path = {{ fileserver.files_dir }}/Users
+read only = no
+{% endif %}
+
+
+{% endif %}

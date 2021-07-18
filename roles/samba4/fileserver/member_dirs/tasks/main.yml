@@ -1,0 +1,52 @@
+- name: Restart Samba
+  systemd:
+    name: "{{ item }}"
+    state: restarted    
+  with_items:
+    - smbd.service
+    - nmbd.service
+    - winbind.service
+
+- name: Create Files Directory
+  file:
+    path: "{{ member_fileserver.files_dir }}"
+    state: directory
+    group: "Domain Admins"
+  register: result
+  retries: 5
+  delay: 10
+  until: result is not failed    
+
+- name: Create Home Users Directory
+  file:
+    path: "{{ member_fileserver.files_dir }}/Users"
+    state: directory
+    group: "Domain Admins"
+  when: member_fileserver.home_user_dir is defined
+
+- name: Create Recycle Directory
+  file:
+    path: "{{ member_fileserver.files_dir }}/Recycle"
+    state: directory
+    group: "Domain Admins"
+  when: member_fileserver.recycle is defined
+
+- name: Create Public Directory
+  file:
+    path: "{{ member_fileserver.files_dir }}/Public"
+    state: directory
+    group: "Domain Admins"
+  when: member_fileserver.public_dir is defined
+
+- name: Set Permission Public
+  shell: samba-tool ntacl set "O:LAG:DAD:PAI(A;;0x001f01ff;;;LA)(A;;0x001f01ff;;;DA)(A;OICIIO;0x001301bf;;;CO)(A;OICIIO;0x001301bf;;;CG)(A;OICI;0x001301bf;;;DU)" {{ member_fileserver.files_dir }}/Public
+  when: member_fileserver.public_dir is defined
+
+- name: Set Permission Home Users
+  shell: samba-tool ntacl set "O:LAG:DAD:PAI(A;OICI;0x001f01ff;;;LA)(A;OICI;0x001f01ff;;;DA)(A;OICIIO;0x001f01ff;;;CO)(A;;0x001200a9;;;DU)" {{ member_fileserver.files_dir }}/Users
+  when: member_fileserver.home_user_dir is defined
+
+- name: Set Permission Recycle
+  shell: samba-tool ntacl set "O:LAG:DAD:PAI(A;OICI;0x001f01ff;;;LA)(A;OICI;0x001f01ff;;;DA)(A;OICIIO;0x001f01ff;;;CO)(A;;0x001201bd;;;DU)" {{ member_fileserver.files_dir }}/Recycle
+  when: member_fileserver.recycle is defined
+

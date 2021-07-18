@@ -1,0 +1,33 @@
+---
+
+
+- name: Set facts
+  include_tasks: ../../../../facts.yml
+
+- set_fact:
+    distribution: "{{ hostvars[inventory_hostname].ansible_distribution }}"
+    release: "{{ hostvars[inventory_hostname].ansible_distribution_release }}"
+
+- name: Check if already exists an domain
+  stat:
+    path: /var/lib/samba/private/idmap.ldb
+  register: check_idmap
+
+- name: Delete old smb.conf
+  file:
+    state: absent
+    path: /etc/samba/smb.conf
+  when: not check_idmap.stat.exists
+
+- name: Delete old krb5.conf
+  file:
+    state: absent
+    path: /etc/krb5.conf
+  when: not check_idmap.stat.exists
+
+- name: Samba | Provision
+  include_tasks: provision.yml
+  when: not check_idmap.stat.exists
+
+- name: Samba | Configure
+  include_tasks: config.yml

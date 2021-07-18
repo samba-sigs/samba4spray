@@ -1,0 +1,4 @@
+{% for host in groups['masters'] %}
+domain {{ samba_domain }}
+nameserver {{ hostvars[host].ansible_host }}
+{% endfor %}

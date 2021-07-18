@@ -1,0 +1,22 @@
+# Version of Samba
+# It's already configured to defaults 4.14.6
+# Use this with your own risk
+# samba_version: 4.14.6
+
+# Domain which will be provisioned in Samba DC
+# Best practices:
+# Use a domain name you own.
+# Use a subdomain of your domain, such as ad.example.com.
+# Do not use .local domains. They can cause problems with Mac OS X and Zeroconf.
+# https://wiki.samba.org/index.php/Active_Directory_Naming_FAQ
+# https://social.technet.microsoft.com/wiki/contents/articles/34981.active-directory-best-practices-for-internal-domain-and-network-names.aspx
+# https://www.itprotoday.com/active-directory/q-can-i-use-local-or-pvt-top-level-domain-tld-names-part-active-directory-ad-tree
+samba_domain: contoso.invalid
+
+# NetBIOS domain name (Workgroup). This can be anything, but it must be one word, not longer than 15 characters and not containing a dot. 
+# It is recommended to use the first part of the AD DNS domain. For example: contoso. Do not use the computers short hostname.
+workgroup: contoso
+
+# Password of AD user Administrator
+# Best Practicies: Strong and complex password containing alphanumeric and special characters
+admin_pass: P@ssword@2021

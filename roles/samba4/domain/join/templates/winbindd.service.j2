@@ -1,0 +1,10 @@
+[Unit]
+Description=Winbindd
+After=network.target remote-fs.target nss-lookup.target
+[Service]
+Type=forking
+LimitNOFILE=16384
+ExecStart=/usr/sbin/winbindd -D
+ExecReload=/usr/bin/kill -HUP
+[Install]
+WantedBy=multi-user.target

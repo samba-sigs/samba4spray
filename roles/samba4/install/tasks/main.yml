@@ -1,0 +1,13 @@
+---
+
+- name: Check if Samba Already installed
+  stat:
+    path: /var/lib/samba
+  register: samba_directory
+
+- name: Samba | Pre-Install
+  include_tasks: preinstall.yml
+
+- name: Samba | Install
+  include_tasks: install.yml
+  when: not samba_directory.stat.exists

@@ -1,0 +1,6 @@
+# samba_internal or bind9
+dns_backend: bind9
+
+# DNS for Bind9 DNS Forwarder
+dns1: 8.8.8.8
+dns2: 8.8.4.4

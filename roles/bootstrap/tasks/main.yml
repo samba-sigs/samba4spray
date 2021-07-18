@@ -1,0 +1,15 @@
+---
+
+- set_fact:
+    distribution: "{{ hostvars[inventory_hostname].ansible_distribution }}"
+    release: "{{ hostvars[inventory_hostname].ansible_distribution_release }}"
+
+# - name: Print all available facts
+#   ansible.builtin.debug:
+#     var: ansible_facts
+
+- include_tasks: ubuntu-focal.yml
+  when: distribution == "Ubuntu" and release == "focal"
+
+# - include_tasks: centos.yml
+#   when: '''ID=centos'' in os_release.stdout_lines'

@@ -1,0 +1,14 @@
+[libdefaults]
+        default_realm = {{ samba_domain|upper }}
+        dns_lookup_realm = false
+        dns_lookup_kdc = true
+
+[realms]
+{{ samba_domain|upper }} = {
+        default_domain = {{ samba_domain }}
+        kdc = {{ ansible_host }}
+        admin_server = {{ ansible_host }}
+}
+
+[domain_realm]
+        {{ inventory_hostname }} = {{ samba_domain|upper }}

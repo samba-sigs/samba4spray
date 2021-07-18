@@ -1,0 +1,102 @@
+################# Global Configuration ##################
+# Do not modify!!! unless you know what you're doing
+
+[global]
+bind interfaces only = Yes
+interfaces = lo {{ target_interface }}
+netbios name = {{ inventory_hostname|upper }}
+realm = {{ samba_domain|upper }}
+server role = active directory domain controller
+server services = s3fs, rpc, nbt, wrepl, ldap, cldap, kdc, drepl, winbindd, ntp_signd, kcc, dnsupdate
+workgroup = {{ workgroup|upper }}
+idmap_ldb:use rfc2307 = yes
+vfs objects = dfs_samba4 acl_xattr {% if audit.enable %}full_audit {% endif %}{% if fileserver.recycle %}recycle{% endif %}
+
+acl_xattr:default acl style = windows
+
+{% if audit.enable %}
+################# Audit ##########################
+
+max log size = {{ audit.max_log_size }}
+strict sync = yes
+sync always = yes
+full_audit:success = unlinkat, renameat
+full_audit:prefix = USER: %U | MACHINE: %M | DIRECTORY: %S | --> 
+full_audit:failure = none
+full_audit:facility = LOCAL5
+full_audit:priority = notice
+
+{% endif %}
+{% if fileserver.recycle %}
+################# Recycle #######################
+
+recycle:keeptree = yes
+recycle:versions = yes
+recycle:repository = {{ fileserver.files_dir }}/Recycle/%U
+recycle:exclude = *.tmp, *.log, *.obj, ~*.*, *.bak
+recycle:exclude_dir = tmp, cache, profiles
+
+{% endif %}
+################# Default Shares ##################
+# Do not modify!!! unless you know what you're doing
+
+[sysvol]
+path = {% if sysvol_replication %}/Sysvol{% else %}/var/lib/samba/sysvol{% endif %}
+
+read only = No
+
+[netlogon]
+path = {% if sysvol_replication %}/Sysvol{% else %}/var/lib/samba/sysvol{% endif %}/{{ samba_domain }}/scripts
+read only = No
+
+{% if audit.enable %}
+################# Audit ###################
+
+[Audit]
+path = {{ fileserver.files_dir }}/Audit
+read only = no
+browseable = yes
+
+{% endif %}
+{% if fileserver.recycle %}
+################# Recycle ###################
+
+[Recycle]
+path = {{ fileserver.files_dir }}/Recycle
+read only = no
+browseable = no
+
+{% endif %}
+################# Custom Shares ###################
+
+### Example share and advanced hiddens ###
+# [Name_of_your_share]
+# path = /Directory/Example
+# read only = no
+# browseable = yes
+### hide files start with a dot (.)
+# hide dot files = yes
+### hide selected files. example files start with ($)
+# hide files = /$*/
+### hide pipes, sockets, devices ...
+# hide special files = yes
+### hide files with no read permissions
+# hide unreadable = yes
+### hide files with no write permissions
+# hide unwriteable files = yes
+
+{% if fileserver.dc %}
+{% if fileserver.public_dir %}
+[Public]
+path = {{ fileserver.files_dir }}/Public
+read only = no
+{% endif %}
+
+{% if fileserver.home_user_dir %}
+[Users]
+path = {{ fileserver.files_dir }}/Users
+read only = no
+{% endif %}
+
+
+{% endif %}

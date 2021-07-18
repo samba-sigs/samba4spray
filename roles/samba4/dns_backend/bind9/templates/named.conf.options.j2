@@ -1,0 +1,20 @@
+options {
+  directory "/var/cache/bind";
+
+  forwarders {
+          {{ dns1 }};
+          {{ dns2 }};
+          
+  };
+
+  allow-query { any; };
+
+  dnssec-validation no;
+
+  auth-nxdomain no;    # conform to RFC1035
+  listen-on-v6 { none; };
+
+  tkey-gssapi-keytab "/var/lib/samba/bind-dns/dns.keytab";
+
+  minimal-responses yes;
+};

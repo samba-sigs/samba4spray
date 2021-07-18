@@ -1,0 +1,7 @@
+---
+
+- include_tasks: veeambackup.yml
+  when:
+    - veeam_backup is defined
+
+  

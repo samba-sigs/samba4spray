@@ -1,0 +1,39 @@
+---
+
+- name: Configure krb5.conf
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: bind
+  with_items:
+    - {src: 'krb5.conf.j2', dest: '/etc/krb5.conf'}
+
+- name: Create dir ntp_sign
+  file:
+    path: /var/lib/samba/ntp_signd/
+    state: directory
+    mode: '0750'
+    owner: root
+    group: ntp
+
+- name: Set timezone
+  timezone:
+    name: "{{ timezone }}"
+
+- name: Create Samba Systemd
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - {src: 'samba.service.j2', dest: '/etc/systemd/system/samba.service'}
+
+- name: Reload Daemon
+  systemd:
+    daemon_reload: yes
+ 
+- name: Enable Samba Service
+  systemd:
+    name: samba.service
+    enabled: yes
+    state: started

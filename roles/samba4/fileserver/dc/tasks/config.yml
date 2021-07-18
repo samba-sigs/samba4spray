@@ -1,0 +1,53 @@
+- name: Create smb.conf
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - {src: 'smb.conf.j2', dest: '/etc/samba/smb.conf'}
+
+- name: Winbind Create a symbolic link
+  shell: |
+    ln -s /usr/local/samba/lib/libnss_winbind.so.2 /lib/x86_64-linux-gnu/
+    ln -s /lib/x86_64-linux-gnu/libnss_winbind.so.2 /lib/x86_64-linux-gnu/libnss_winbind.so
+  ignore_errors: true
+
+- name: Enable winbind in nsswitch.conf
+  lineinfile:
+    path: /etc/nsswitch.conf
+    regexp: '^passwd(.*)$'
+    line: 'passwd:         files systemd winbind'
+    backrefs: yes
+  changed_when: true
+
+- name: Enable winbind in nsswitch.conf
+  lineinfile:
+    path: /etc/nsswitch.conf
+    regexp: '^group(.*)$'
+    line: 'group:          files systemd winbind'
+    backrefs: yes
+
+- name: Reload ldconfig
+  shell: ldconfig
+
+- name: Reload Daemon
+  systemd:
+    daemon_reload: yes
+
+- name: Restart Bind
+  systemd:
+    name: named.service
+    state: restarted
+
+- name: Restart Samba
+  systemd:
+    name: samba.service
+    state: restarted
+
+- name: Set Domain Admins PrintOperatorPrivilege and DiskOperatorPrivilege
+  shell: |
+     'echo "{{ admin_pass }}" | /usr/local/samba/bin/net rpc rights grant "{{ workgroup|upper }}\Domain Admins" SeDiskOperatorPrivilege -U "{{ workgroup|upper }}\administrator"'
+     'echo "{{ admin_pass }}" | /usr/local/samba/bin/net rpc rights grant "{{ workgroup|upper }}\Domain Admins" SePrintOperatorPrivilege -U "{{ workgroup|upper }}\administrator"'
+  retries: 3
+  delay: 3
+  register: result
+  until: result.rc == 0  

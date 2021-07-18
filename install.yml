@@ -1,0 +1,63 @@
+---
+- hosts: all
+  gather_facts: yes
+  vars:
+    distribution: "{{ hostvars[inventory_hostname].ansible_distribution }}"
+    release: "{{ hostvars[inventory_hostname].ansible_distribution_release }}"
+  roles:
+    - { role: bootstrap, tags: [ 'init', 'install', 'masters', 'dc', 'member' ] }
+
+- hosts: all
+  gather_facts: yes
+  roles:
+    - { role: samba4/install, tags: [ 'install', 'masters', 'dc', 'member' ] }
+
+- hosts: masters
+  gather_facts: yes
+  roles:
+    - { role: samba4/domain/provision, tags: [ 'provision', 'masters' ] }
+
+- hosts: masters:dc
+  gather_facts: yes
+  roles:
+    - { role: samba4/dns_backend/bind9, tags: [ 'dns', 'masters', 'dc' ] }
+
+- hosts: fileserver
+  gather_facts: yes
+  roles:
+    - { role: samba4/fileserver/member, tags: [ 'member', 'memberfs' ] }
+
+- hosts: all
+  gather_facts: yes
+  roles:
+    - { role: samba4/domain/join, tags: [ 'join', 'dc', member ] }
+    - { role: samba4/ntp, tags: [ 'ntp', 'dc', 'masters', 'member' ] }
+
+- hosts: masters:dc
+  gather_facts: yes
+  roles:
+    - { role: samba4/domain/sysvol, tags: [ 'sysvol', 'masters', 'dc' ], when: sysvol_replication is defined }
+    - { role: samba4/fileserver/dc, tags: [ 'fileserver', 'dc' ] }
+
+- hosts: fileserver
+  gather_facts: yes
+  roles:
+    - { role: samba4/fileserver/member_dirs, tags: [ 'member', 'member_dirs' ] }
+
+- hosts: masters
+  gather_facts: no
+  tasks:
+    - name: Update DNS
+      shell: "samba_dnsupdate --all-names --verbose"
+
+
+- hosts: all
+  gather_facts: yes
+  roles:
+    - { role: samba4/audit, tags: [ 'audit', 'masters', 'dc', 'member' ] }
+
+- hosts: masters
+  gather_facts: yes
+  roles:
+    - { role: samba4/configuration/dns, tags: [ 'configs_dns', 'masters' ] }
+    - { role: samba4/configuration/group_policies, tags: [ 'gpo', 'masters' ] }

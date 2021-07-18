@@ -1,0 +1,29 @@
+---
+- name: Check if already exists an domain
+  stat:
+    path: /var/lib/samba/private/idmap.ldb
+  register: check_idmap
+
+- name: Join Domain Bind9
+  command: 'samba-tool domain join {{ samba_domain }} DC -k yes --dns-backend=BIND9_DLZ --option="interfaces=lo {{ target_interface }}" --option="bind interfaces only=yes" --option="idmap_ldb:use rfc2307=yes"'
+  when: dns_backend == "bind9" and not check_idmap.stat.exists and inventory_hostname not in groups['fileserver']
+
+- name: Join Domain SAMBA_INTERNAL
+  command: 'samba-tool domain join {{ samba_domain }} DC -k yes --dns-backend=SAMBA_INTERNAL --option="interfaces=lo {{ target_interface }}" --option="bind interfaces only=yes" --option="idmap_ldb:use rfc2307=yes"'
+  when: dns_backend == "samba_internal" and not check_idmap.stat.exists and inventory_hostname not in groups['fileserver']
+
+- name: Join Domain FileServer
+  command: net ads join -U 'Administrator'%'{{ admin_pass }}'
+  when: inventory_hostname in groups['fileserver']
+
+- name: Create Samba Systemd
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - {src: 'samba.service.j2', dest: '/etc/systemd/system/samba.service'}
+  when: inventory_hostname not in groups['fileserver']
+
+- name: Reload Daemon
+  systemd:
+    daemon_reload: yes

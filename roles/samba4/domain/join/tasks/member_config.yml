@@ -1,0 +1,31 @@
+- name: Create smbd/nmbd/winbindd services
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - {src: 'smbd.service.j2', dest: '/etc/systemd/system/smbd.service'}
+    - {src: 'nmbd.service.j2', dest: '/etc/systemd/system/nmbd.service'}
+    - {src: 'winbindd.service.j2', dest: '/etc/systemd/system/winbindd.service'}
+  when: inventory_hostname in groups['fileserver']
+
+- name: Daemon Reload
+  systemd:
+    daemon_reload: yes
+  when: inventory_hostname in groups['fileserver']
+
+# - name: Fetch Secrets Files
+#   run_once: yes
+#   fetch: src=/var/lib/samba/private/{{ item }} dest=buffer/ flat=yes
+#   when: inventory_hostname in groups['masters']
+#   with_items:
+#     - secrets.keytab
+#     - secrets.ldb
+#     - secrets.tdb
+
+# - name: Copy Secrets to Members
+#   copy: src=buffer/{{ item }} dest=/var/lib/samba/private
+#   when: inventory_hostname in groups['fileserver']
+#   with_items:
+#     - secrets.keytab
+#     - secrets.ldb
+#     - secrets.tdb
